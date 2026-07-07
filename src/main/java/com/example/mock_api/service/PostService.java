@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -14,7 +15,9 @@ public class PostService {
     private final ArrayList<Post> postList = new ArrayList<Post>();
 
     public List<Post> fetchAllPosts() {
-        return postList;
+        return postList.stream()
+                .sorted(Comparator.comparing(Post::getCreatedAt).reversed())
+                .toList();
     }
 
     public Post fetchPostById(String _id) {
