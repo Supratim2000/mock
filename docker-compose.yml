@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  social-media-backend:
+    build: .
+    container_name: socialMediaBackendContainer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/postdb
+    networks:
+      - social-media-network
+  mongodb:
+    image: mongo:latest
+    container_name: mongoContainer
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - social-media-network
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongodb_data:
+
+networks:
+  social-media-network:
+    name: social-media-network
+    driver: bridge

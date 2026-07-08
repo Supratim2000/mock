@@ -3,6 +3,9 @@ package com.example.mock_api.service;
 import com.example.mock_api.dto.Post;
 import com.example.mock_api.dto.PostRequest;
 import com.example.mock_api.dto.Product;
+import com.example.mock_api.entity.PostEntity;
+import com.example.mock_api.repository.PostRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -12,45 +15,43 @@ import java.util.List;
 
 @Service
 public class PostService {
-    private final ArrayList<Post> postList = new ArrayList<Post>();
+    @Autowired
+    private PostRepository postRepository;
 
-    public List<Post> fetchAllPosts() {
-        return postList.stream()
-                .sorted(Comparator.comparing(Post::getCreatedAt).reversed())
-                .toList();
+    public List<PostEntity> fetchAllPosts() {
+        return postRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    public Post fetchPostById(String _id) {
-        return postList.stream()
-                .filter(post -> post.getId().equals(_id))
-                .findFirst()
+    public PostEntity fetchPostById(String _id) {
+        return postRepository
+                .findById(_id)
                 .orElse(null);
     }
 
-    public Post updatePost(PostRequest postRequest) {
-        Post fetchedPost = fetchPostById(postRequest.getId());
+    public PostEntity updatePost(PostRequest postRequest) {
+        PostEntity existingPost = postRepository.findById(postRequest.getId())
+                .orElse(null);
 
-        if(fetchedPost == null) {
+        if (existingPost == null) {
             return null;
         }
 
-        fetchedPost.setUserName(postRequest.getUserName());
-        fetchedPost.setUserAvatar(postRequest.getUserAvatar());
-        fetchedPost.setPostImage(postRequest.getPostImage());
-        fetchedPost.setCaption(postRequest.getCaption());
-        fetchedPost.setLikes(postRequest.getLikes());
+        existingPost.setUserName(postRequest.getUserName());
+        existingPost.setUserAvatar(postRequest.getUserAvatar());
+        existingPost.setPostImage(postRequest.getPostImage());
+        existingPost.setCaption(postRequest.getCaption());
+        existingPost.setLikes(postRequest.getLikes());
+        existingPost.setCommentsCount(postRequest.getCommentsCount());
 
-        return fetchedPost;
+        return postRepository.save(existingPost);
     }
 
-    public Post createPost(PostRequest postRequest) {
-        Post fetchedPost = fetchPostById(postRequest.getId());
-
-        if(fetchedPost != null) {
+    public PostEntity createPost(PostRequest postRequest) {
+        if(postRepository.existsById(postRequest.getId())) {
             return null;
         }
 
-        Post createdPost = Post.builder()
+        PostEntity createdPost = PostEntity.builder()
                 .id(postRequest.getId())
                 .userName(postRequest.getUserName())
                 .userAvatar(postRequest.getUserAvatar())
@@ -61,18 +62,15 @@ public class PostService {
                 .createdAt(Instant.now())
                 .build();
 
-        postList.add(createdPost);
-
-        return createdPost;
+        return postRepository.save(createdPost);
     }
 
     public boolean deletePostById(String _id) {
-        Post existingPost = fetchPostById(_id);
-
-        if (existingPost == null) {
-            return false;
+        if(postRepository.existsById(_id)) {
+            postRepository.deleteById(_id);
+            return true;
         }
 
-        return postList.remove(existingPost);
+        return false;
     }
 }

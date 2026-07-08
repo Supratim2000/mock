@@ -3,6 +3,7 @@ package com.example.mock_api.service;
 import com.example.mock_api.dto.Comment;
 import com.example.mock_api.dto.CommentRequest;
 import com.example.mock_api.dto.Post;
+import com.example.mock_api.entity.PostEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,7 @@ public class CommentService {
     private final PostService postService;
 
     public Comment commentOnPostById(String _postId, CommentRequest commentRequest) {
-        Post fetchedPost = postService.fetchPostById(_postId);
+        PostEntity fetchedPost = postService.fetchPostById(_postId);
         if(fetchedPost == null) {
             return null;
         }
@@ -67,7 +68,7 @@ public class CommentService {
             return false;
         }
 
-        Post post = postService.fetchPostById(existingComment.getPostId());
+        PostEntity post = postService.fetchPostById(existingComment.getPostId());
 
         if (post != null && post.getCommentsCount() > 0) {
             post.setCommentsCount(post.getCommentsCount() - 1);
@@ -78,7 +79,7 @@ public class CommentService {
 
     public void deleteCommentsByPostId(String postId) {
 
-        Post post = postService.fetchPostById(postId);
+        PostEntity post = postService.fetchPostById(postId);
 
         if (post != null) {
             post.setCommentsCount(0);
