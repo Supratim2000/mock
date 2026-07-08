@@ -15,7 +15,7 @@ services:
     networks:
       - social-media-network
   mongodb:
-    image: mongo:8.0
+    image: mongo:latest
     container_name: mongoContainer
     restart: always
     ports:
