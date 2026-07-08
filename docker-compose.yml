@@ -20,8 +20,6 @@ services:
     restart: always
     ports:
       - 27017:27017
-    volumes:
-      - mongodb_data:/data/db
     networks:
       - social-media-network
     healthcheck:
@@ -29,9 +27,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
-
-volumes:
-  mongodb_data:
 
 networks:
   social-media-network:
