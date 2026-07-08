@@ -15,7 +15,7 @@ services:
     networks:
       - social-media-network
   mongodb:
-    image: mongo:latest
+    image: mongo:8.0
     container_name: mongoContainer
     restart: always
     ports:
@@ -25,10 +25,10 @@ services:
     networks:
       - social-media-network
     healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
 
 volumes:
   mongodb_data:
