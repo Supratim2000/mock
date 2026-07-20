@@ -16,12 +16,9 @@ import java.util.List;
 public class CommentController {
     private final CommentService commentService;
 
-    @PostMapping("/create/{postId}")
-    public ResponseEntity<Comment> createComment(
-            @PathVariable String postId,
-            @RequestBody CommentRequest commentRequest) {
-
-        Comment comment = commentService.commentOnPostById(postId, commentRequest);
+    @PostMapping("/create")
+    public ResponseEntity<Comment> createComment(@RequestBody CommentRequest commentRequest) {
+        Comment comment = commentService.commentOnPostById(commentRequest);
 
         if (comment == null) {
             return ResponseEntity.notFound().build();
@@ -30,19 +27,13 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
-    @GetMapping("/fetch/post/{postId}")
-    public ResponseEntity<List<Comment>> getCommentsByPostId(
-            @PathVariable String postId) {
-
-        List<Comment> comments = commentService.fetchAllCommentsByPostId(postId);
-
-        return ResponseEntity.ok(comments);
+    @GetMapping("/retrieve/post/{postId}")
+    public ResponseEntity<List<Comment>> getCommentsByPostId(@PathVariable String postId) {
+        return ResponseEntity.ok(commentService.fetchAllCommentsByPostId(postId));
     }
 
-    @GetMapping("/fetch/{commentId}")
-    public ResponseEntity<Comment> getCommentById(
-            @PathVariable String commentId) {
-
+    @GetMapping("/retrieve/{commentId}")
+    public ResponseEntity<Comment> getCommentById(@PathVariable String commentId) {
         Comment comment = commentService.fetchCommentById(commentId);
 
         if (comment == null) {
@@ -53,9 +44,7 @@ public class CommentController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<Comment> updateComment(
-            @RequestBody CommentRequest commentRequest) {
-
+    public ResponseEntity<Comment> updateComment(@RequestBody CommentRequest commentRequest) {
         Comment updatedComment = commentService.updateComment(commentRequest);
 
         if (updatedComment == null) {
@@ -66,14 +55,19 @@ public class CommentController {
     }
 
     @DeleteMapping("/delete/{commentId}")
-    public ResponseEntity<Void> deleteComment(
-            @PathVariable String commentId) {
-
+    public ResponseEntity<Void> deleteComment(@PathVariable String commentId) {
         boolean deleted = commentService.deleteComment(commentId);
 
         if (!deleted) {
             return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/delete/post/{postId}")
+    public ResponseEntity<Void> deleteCommentsByPostId(@PathVariable String postId) {
+        commentService.deleteCommentsByPostId(postId);
 
         return ResponseEntity.noContent().build();
     }

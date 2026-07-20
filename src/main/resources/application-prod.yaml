@@ -1,11 +1,9 @@
 spring:
-  profiles:
-    active: prod
   application:
     name: mock-api
   data:
     mongodb:
-      uri: mongodb://ec2-18-208-228-198.compute-1.amazonaws.com:27017/
+      uri: ${SPRING_DATA_MONGODB_URI}
 logging:
   level:
     org.mongodb.driver: DEBUG

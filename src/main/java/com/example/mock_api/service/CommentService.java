@@ -2,89 +2,131 @@ package com.example.mock_api.service;
 
 import com.example.mock_api.dto.Comment;
 import com.example.mock_api.dto.CommentRequest;
-import com.example.mock_api.dto.Post;
+import com.example.mock_api.entity.CommentEntity;
 import com.example.mock_api.entity.PostEntity;
+import com.example.mock_api.repository.CommentRepository;
+import com.example.mock_api.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
-    private List<Comment> commentList = new ArrayList<Comment>();
+    private final CommentRepository commentRepository;
+    private final PostRepository postRepository;
     private final PostService postService;
 
-    public Comment commentOnPostById(String _postId, CommentRequest commentRequest) {
-        PostEntity fetchedPost = postService.fetchPostById(_postId);
+    @Transactional
+    public Comment commentOnPostById(CommentRequest commentRequest) {
+        PostEntity fetchedPost = postService.fetchPostById(commentRequest.getPostId());
         if(fetchedPost == null) {
             return null;
         }
 
-        Comment comment = Comment.builder()
-                .id(commentRequest.getId())
+        CommentEntity commentEntity = CommentEntity.builder()
                 .postId(fetchedPost.getId())
                 .comment(commentRequest.getComment())
                 .createdAt(Instant.now())
                 .build();
 
-        commentList.add(comment);
+        CommentEntity savedComment = commentRepository.save(commentEntity);
 
-        return comment;
+        fetchedPost.setCommentsCount(fetchedPost.getCommentsCount() + 1);
+        postRepository.save(fetchedPost);
+
+        return mapToDto(savedComment);
     }
 
     public List<Comment> fetchAllCommentsByPostId(String _postId) {
-        return commentList.stream()
-                .filter(comment -> comment.getPostId().equals(_postId))
+        return commentRepository.findByPostId(_postId)
+                .stream()
+                .map(this::mapToDto)
                 .toList();
     }
 
     public Comment fetchCommentById(String commentId) {
-        return commentList.stream()
-                .filter(comment -> comment.getId().equals(commentId))
-                .findFirst()
+        return commentRepository.findById(commentId)
+                .map(this::mapToDto)
                 .orElse(null);
     }
 
+    @Transactional
     public Comment updateComment(CommentRequest commentRequest) {
-        Comment existingComment = fetchCommentById(commentRequest.getId());
-
-        if (existingComment == null) {
+        CommentEntity fetchedComment = commentRepository.findById(commentRequest.getId()).orElse(null);
+        if(fetchedComment == null) {
             return null;
         }
 
-        existingComment.setComment(commentRequest.getComment());
+        fetchedComment.setComment(commentRequest.getComment());
 
-        return existingComment;
+        String oldPostId = fetchedComment.getPostId();
+        String newPostId = commentRequest.getPostId();
+
+        if(!oldPostId.equals(newPostId)) {
+            PostEntity oldPost = postService.fetchPostById(oldPostId);
+            PostEntity newPost = postService.fetchPostById(newPostId);
+
+            if(newPost == null || oldPost == null) {
+                return null;
+            }
+
+            if(oldPost.getCommentsCount() > 0) {
+                oldPost.setCommentsCount(oldPost.getCommentsCount() - 1);
+            }
+            newPost.setCommentsCount(newPost.getCommentsCount() + 1);
+
+            postRepository.save(oldPost);
+            postRepository.save(newPost);
+
+            fetchedComment.setPostId(newPostId);
+        }
+
+        CommentEntity savedComment = commentRepository.save(fetchedComment);
+
+        return mapToDto(savedComment);
     }
 
+    @Transactional
     public boolean deleteComment(String commentId) {
-
-        Comment existingComment = fetchCommentById(commentId);
-
-        if (existingComment == null) {
+        CommentEntity fetchedComment = commentRepository.findById(commentId).orElse(null);
+        if(fetchedComment == null) {
             return false;
         }
 
-        PostEntity post = postService.fetchPostById(existingComment.getPostId());
+        commentRepository.delete(fetchedComment);
 
-        if (post != null && post.getCommentsCount() > 0) {
-            post.setCommentsCount(post.getCommentsCount() - 1);
+        PostEntity fetchedPost = postService.fetchPostById(fetchedComment.getPostId());
+
+        if(fetchedPost != null && fetchedPost.getCommentsCount() > 0) {
+            fetchedPost.setCommentsCount(fetchedPost.getCommentsCount() - 1);
+            postRepository.save(fetchedPost);
         }
 
-        return commentList.remove(existingComment);
+        return true;
     }
 
+    @Transactional
     public void deleteCommentsByPostId(String postId) {
+        List<CommentEntity> fetchedComments = commentRepository.findByPostId(postId);
+        commentRepository.deleteAll(fetchedComments);
 
-        PostEntity post = postService.fetchPostById(postId);
-
-        if (post != null) {
-            post.setCommentsCount(0);
+        PostEntity fetchedPost = postService.fetchPostById(postId);
+        if(fetchedPost != null) {
+            fetchedPost.setCommentsCount(0);
+            postRepository.save(fetchedPost);
         }
+    }
 
-        commentList.removeIf(comment -> comment.getPostId().equals(postId));
+    private Comment mapToDto(CommentEntity entity) {
+        return Comment.builder()
+                .id(entity.getId())
+                .postId(entity.getPostId())
+                .comment(entity.getComment())
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
 }
