@@ -28,6 +28,7 @@ public class CommentService {
         }
 
         CommentEntity commentEntity = CommentEntity.builder()
+                .id(commentRequest.getId())
                 .postId(fetchedPost.getId())
                 .comment(commentRequest.getComment())
                 .createdAt(Instant.now())
