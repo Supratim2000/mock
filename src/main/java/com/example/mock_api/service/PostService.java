@@ -4,19 +4,25 @@ import com.example.mock_api.dto.Post;
 import com.example.mock_api.dto.PostRequest;
 import com.example.mock_api.dto.Product;
 import com.example.mock_api.entity.PostEntity;
+import com.example.mock_api.repository.CommentRepository;
 import com.example.mock_api.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PostService {
     @Autowired
     private PostRepository postRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
 
     public List<PostEntity> fetchAllPosts() {
         return postRepository.findAllByOrderByCreatedAtDesc();
@@ -65,12 +71,17 @@ public class PostService {
         return postRepository.save(createdPost);
     }
 
+    @Transactional
     public boolean deletePostById(String _id) {
-        if(postRepository.existsById(_id)) {
-            postRepository.deleteById(_id);
-            return true;
+        Optional<PostEntity> post = postRepository.findById(_id);
+
+        if (post.isEmpty()) {
+            return false;
         }
 
-        return false;
+        commentRepository.deleteByPostId(_id);
+        postRepository.delete(post.get());
+
+        return true;
     }
 }

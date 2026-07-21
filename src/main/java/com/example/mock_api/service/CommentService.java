@@ -22,7 +22,8 @@ public class CommentService {
 
     @Transactional
     public Comment commentOnPostById(CommentRequest commentRequest) {
-        PostEntity fetchedPost = postService.fetchPostById(commentRequest.getPostId());
+        String postId = commentRequest.getPostId();
+        PostEntity fetchedPost = postService.fetchPostById(postId);
         if(fetchedPost == null) {
             return null;
         }
